@@ -46,6 +46,7 @@ for i in xrange(iterasi):
 		errtemp += abs(analysis[k] - (s_begin * week[k] + c_begin))
 	err.append(errtemp/len(week))
 
+#this is the coefficient and contant we get
 print c_begin, s_begin
 
 ideal = []
