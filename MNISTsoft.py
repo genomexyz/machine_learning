@@ -101,29 +101,10 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 #######################
 
 rawdata = readimage(samplenum, iterperlearn, dirnameacc, accessing)
-#rawdata = []
-#for i in xrange(samplenum):
-#	counter = 1
-#	for image_path in glob.glob(dirnameacc+str(i)+accessing):
-#		if counter > iterperlearn:
-#			break
-#		image = misc.imread(image_path)
-#		rawdata.append(image)
-#		counter += 1
-#print('done')
 
 rawdataflat = np.zeros((samplenum*iterperlearn, imgdim*imgdim))
 for i in xrange(len(rawdata)):
 	rawdataflat[i] = rawdata[i].flatten()
-
-#print(np.shape(rawdataflat))
-#print(rawdataflat[78])
-
-
-#example
-#matrix1 = tf.constant([[3., 3., 100.]])
-#matrix2 = tf.constant([[2., 2., 6.]])
-#multip = tf.mul(matrix1, matrix2)
 
 #####################
 #normalizing session#
