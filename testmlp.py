@@ -23,7 +23,7 @@ import time
 
 #setting
 learning_rate = 0.05
-iterasi = 17000
+iterasi = 3000
 totvar = 3
 hidnode = 5
 
@@ -66,11 +66,11 @@ for i in xrange(len(tru)):
 	inputcomp[i,1] = cosinus[i]
 	inputcomp[i,2] = tangent[i]
 
-testcomp = np.zeros((len(sintes), totvar))
-for i in xrange(len(sintes)):
-	testcomp[i,0] = sintes[i]
-	testcomp[i,1] = costes[i]
-	testcomp[i,2] = tantes[i]
+#testcomp = np.zeros((len(sintes), totvar))
+#for i in xrange(len(sintes)):
+#	testcomp[i,0] = sintes[i]
+#	testcomp[i,1] = costes[i]
+#	testcomp[i,2] = tantes[i]
 
 #####################
 #normalizing session#
@@ -92,7 +92,7 @@ for i in xrange(totvar):
 #	testcomp[:,i] = batnorm(testcomp[:,i])
 #	testcomp[:,i] = (testcomp[:,i] - contmean[i]) / contstd[i]
 
-#print(testcomp)
+
 #########################
 #operation of tensorflow#
 #########################
@@ -136,11 +136,15 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 #training session#
 ##################
 
+deter = np.zeros((iterasi))
 with tf.Session() as sess:
 	tf.global_variables_initializer().run()
 	for i in range(iterasi):
 		sess.run(optimizer, feed_dict={X: inputcomp, Y: tru})
 		#print(cost.eval(feed_dict={X: inputcomp, Y: tru}))
+		pre = finpred.eval(feed_dict={X: inputcomp})[:,0]
+		#deter[i] = np.sqrt((np.mean((pre - tru[:,0])**2.0)))
+		deter[i] = np.sqrt((np.mean((pre * np.var(simpantru)**0.5 + np.mean(simpantru) - simpantru)**2.0)))
 	prediksi = finpred.eval(feed_dict={X: inputcomp})[:,0]
 	second = sigm.eval(feed_dict={X: inputcomp})
 	wei = Wh.eval()
@@ -150,6 +154,23 @@ with tf.Session() as sess:
 #################
 	#prediksitest = finpred.eval(feed_dict={X: testcomp})[:,0]
 
-print(prediksi * np.var(simpantru)**0.5 + np.mean(simpantru))
+realpred = prediksi * np.var(simpantru)**0.5 + np.mean(simpantru)
+print(realpred)
 #print(prediksitest * np.var(simpantru)**0.5 + np.mean(simpantru))
 print(np.var(simpantru)**0.5)
+
+##################
+#plotting session#
+##################
+
+#print(deter)
+
+plt.ylabel('prediksi X')
+plt.xlabel('X')
+plt.plot(simpantru, realpred)
+plt.show()
+
+plt.ylabel('error')
+plt.xlabel('iterasi')
+plt.plot(range(iterasi), deter)
+plt.show()
