@@ -41,9 +41,9 @@ def batnorm(matrix):
 ####################
 
 #test data
-sintes = np.sin(54)
-costes = np.cos(54)
-tantes = np.tan(54)
+#sintes = np.sin(54)
+#costes = np.cos(54)
+#tantes = np.tan(54)
 
 
 #truth
@@ -88,11 +88,11 @@ for i in xrange(totvar):
 #	inputcomp[:,i] = batnorm(inputcomp[:,i])
 
 #normalizing test data
-for i in xrange(totvar):
-	#testcomp[:,i] = batnorm(testcomp[:,i])
-	testcomp[:,i] = (testcomp[:,i] - contmean[i]) / contstd[i]
+#for i in xrange(totvar):
+#	testcomp[:,i] = batnorm(testcomp[:,i])
+#	testcomp[:,i] = (testcomp[:,i] - contmean[i]) / contstd[i]
 
-print(testcomp)
+#print(testcomp)
 #########################
 #operation of tensorflow#
 #########################
@@ -148,7 +148,7 @@ with tf.Session() as sess:
 #################
 #predict session#
 #################
-	prediksitest = finpred.eval(feed_dict={X: testcomp})[:,0]
+	#prediksitest = finpred.eval(feed_dict={X: testcomp})[:,0]
 
 print(prediksi * np.var(simpantru)**0.5 + np.mean(simpantru))
 #print(prediksitest * np.var(simpantru)**0.5 + np.mean(simpantru))
