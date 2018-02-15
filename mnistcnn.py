@@ -25,6 +25,7 @@ def separatedata(mat):
 	return trainmat, testmat
 
 def generatemodel(ydim, xdim):
+	#this CNN model courtesy by https://machinelearningmastery.com/handwritten-digit-recognition-using-convolutional-neural-networks-python-keras/
 	# create model
 	model = Sequential()
 	model.add(Conv2D(30, (5, 5), input_shape=(28, 28, 1), activation='relu'))
