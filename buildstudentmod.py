@@ -67,9 +67,9 @@ for i in xrange(2):
 trainlabelnorm = (trainlabel - np.min(trainlabel)) / (np.max(trainlabel) - np.min(trainlabel))
 testlabelnorm = (testlabel - np.min(trainlabel)) / (np.max(trainlabel) - np.min(trainlabel))
 
-###############
-#running model#
-###############
+######################
+#build and save model#
+######################
 
 mod = generatemodel(len(trainparamnorm[0]))
 mod.fit(trainparamnorm, trainlabelnorm, epochs=iterasi, batch_size=batch_size, verbose=2, shuffle=True)
