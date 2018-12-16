@@ -12,9 +12,6 @@ radius = 0.015
 #read data
 data = np.genfromtxt(datasrc, delimiter=[8, 8])
 
-#prepare color
-#colors = cm.hsv(np.linspace(0, 1, kval))
-
 ###############
 #normalization#
 ###############
@@ -107,33 +104,6 @@ while running:
 
 
 
-		#if scanned data not already scanned
-#		if unkdatastat[i,1] == 0.0:
-#			clusternumbering += 1
-			#container of all neighbor
-#			cntdist = []
-#			for j in xrange(len(datanorm)):
-#				#get all euclid distance to check neighbor
-#				if i == j:
-#					continue
-#				dist = np.sum((datanorm[j] - datanorm[i])**2.0)**0.5
-#				if dist < radius:
-#					cntdist.append(j)
-			#write stat if number of neighbor was passed
-#			if len(cntdist) >= neighbor:
-#				for j in xrange(len(cntdist)):
-#					unkdatastat[int(cntdist[j]), 0] = clusternumbering
-#					unkdatastat[int(cntdist[j]), 1] = 1
-#				unkdatastat[i,0] = clusternumbering
-#				unkdatastat[i,1] = 2
-#			else:
-#				unkdatastat[i,0] = 9999
-#				unkdatastat[i,1] = 2
-#		#if scanned data already scanned
-#			print cntdist
-#		break
-#	break
-
 ##########
 #plotting#
 ##########
@@ -152,5 +122,4 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 scatter = ax.scatter(data[:,0],data[:,1], color=alllabelcol,s=5)
 
-#fig.suptitle('iterasi ke-'+str(i+1))
 fig.savefig('clustering/DBSACN')
