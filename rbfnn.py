@@ -1,126 +1,127 @@
 #!/usr/bin/python
 
 import numpy as np
-import pandas as pd
-from sklearn.metrics import mean_squared_error
-import os
-import sys
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import random
+from keras.models import Sequential
+from keras.layers import Activation, Dropout, Flatten, Dense, LSTM, RepeatVector, TimeDistributed
 
 #setting
-traindata = '/home/genomexyz/risetCPNN/training data/train-6.csv'
-testdata = '/home/genomexyz/risetCPNN/training data/test-6.csv'
-sigma = 0.5
-gamma = 0.8
+data = '/home/genomexyz/Downloads/titanic/train-mod.csv'
+kval = 10
+itertot = 40
+sigma = 1.2
+itergd = 300
 
-#do automation
-#arg -> program fase
+def transforminput(param, center):
+	newinput = np.zeros((len(param), len(center))).astype('float32')
+	for i in xrange(len(param)):
+		for j in xrange(len(center)):
+			newinput[i,j] = np.exp(-(np.sum((param[i] - center[j])**2.0)**0.5) / sigma**2.0)
+	return newinput
 
-traindata = '/home/genomexyz/risetCPNN/training data/train-'+sys.argv[1]+'.csv'
-testdata = '/home/genomexyz/risetCPNN/training data/test-'+sys.argv[1]+'.csv'
+def generatemodel(numparam):
+	model = Sequential()
+	model.add(Dense(1, input_dim=numparam, activation='sigmoid'))
+#	model.add(Dense(10, activation='sigmoid'))
+#	model.add(Dense(1, activation='sigmoid'))
+	# Compile model
+	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	return model
 
-##############
-#prepare data#
-##############
- 
-traindatamat = np.genfromtxt(traindata,delimiter=',')[1:]
-testdatamat = np.genfromtxt(testdata,delimiter=',')[1:]
+dataread = np.genfromtxt(data, delimiter=',')[1:,1:]
 
-trainparam = traindatamat[:,:-1]
-trainlabel = traindatamat[:,-1]
-testparam = testdatamat[:,:-1]
-testlabel = testdatamat[:,-1]
+alldata = []
+for i in xrange(len(dataread)):
+	if np.isnan(dataread[i,-2]):
+		continue
+	alldata.append(dataread[i])
 
-#save rain data
-hujan = np.zeros(len(testlabel))
-hujan[:] = testlabel[:]
+alldata = np.asarray(alldata)
 
-#calc rain and no rain class
-raintot = 0
-noraintot = 0
-rainclassparam = []
-norainclassparam = []
-for i in xrange(len(trainlabel)):
-	if trainlabel[i] > 0.0:
-		raintot += 1
-		rainclassparam.append(trainparam[i])
-	else:
-		noraintot += 1
-		norainclassparam.append(trainparam[i])
+#dividing data
+trainparam = alldata[:600,1:]
+trainlabel = alldata[:600,0]
 
-#print raintot, noraintot
-rainclassparam = np.asarray(rainclassparam)
-norainclassparam = np.asarray(norainclassparam)
+testparam = alldata[600:,1:]
+testlabel = alldata[600:,0]
 
 ###############
 #normalization#
 ###############
-#get mean and std (train)
+
 std = np.zeros((len(trainparam[0]))).astype('float32')
 rata = np.zeros((len(trainparam[0]))).astype('float32')
+trainparamnorm = np.zeros(np.shape(trainparam))
+testparamnorm = np.zeros(np.shape(testparam))
 for i in xrange(len(trainparam[0])):
 	std[i] = np.std(trainparam[:,i])
 	rata[i] = np.mean(trainparam[:,i])
-	rainclassparam[:,i] = (rainclassparam[:,i] - rata[i]) / std[i]
-	norainclassparam[:,i] = (norainclassparam[:,i] - rata[i]) / std[i]
-	testparam[:,i] = (testparam[:,i] - rata[i]) / std[i]
+	trainparamnorm[:,i] = (trainparam[:,i] - rata[i]) / std[i]
+	testparamnorm[:,i] = (testparam[:,i] - rata[i]) / std[i]
 
-################
-#real algorithm#
-################
+###############
+#search k-mean#
+###############
 
-allgausspos = np.zeros((len(testparam), len(rainclassparam)))
-allgaussneg = np.zeros((len(testparam), len(norainclassparam)))
+#init kmean
+kmean = np.zeros((kval, len(trainparamnorm[0])))
 
-totvar = float(len(testparam[0]))
+for i in xrange(kval):
+	for j in xrange(len(kmean[0])):
+		kmean[i,j] = random.uniform(min(trainparamnorm[:,j]),max(trainparamnorm[:,j]))
 
-#print np.shape(rainclassparam), np.shape(norainclassparam)
+#looping of real algorithm
+distmin = np.zeros((len(trainparamnorm)))
+for i in xrange(itertot):
+	print 'iterasi ke', i
+	for j in xrange(len(distmin)):
+		#determine euclid distance
+		distall = np.sum((trainparamnorm[j] - kmean)**2.0, axis=1)**0.5
+		distmin[j] = np.argmin(distall)
 
-#calculate gauss for positive class
-for i in xrange(len(testparam)):
-	allgausspos[i] = 1.0 / ((2*np.pi)**(totvar/2.0)*sigma**totvar) * np.exp(-(\
-	np.sum((testparam[i,:] - rainclassparam)**2.0, axis=1)**0.5 / (2.0*sigma**2.0)))
-	#print (testparam[i,:] - norainclassparam)**2.0
+	#search new k mean
+	for j in xrange(kval):
+		clust = []
+		for k in xrange(len(distmin)):
+			if distmin[k] == j:
+				clust.append(trainparamnorm[k])
+		if len(clust) > 0:
+			kmean[j] = np.mean(np.asarray(clust), axis=0)
 
-#calculate gauss for negative class
-for i in xrange(len(testparam)):
-	allgaussneg[i] = 1.0 / ((2*np.pi)**(totvar/2.0)*sigma**totvar) * np.exp(-(\
-	np.sum((testparam[i,:] - norainclassparam)**2.0, axis=1)**0.5 / (2.0*sigma**2.0)))
-	#print (testparam[i,:] - norainclassparam)**2.0
+#tranform our input
+newinput = transforminput(trainparamnorm, kmean)
 
-#sort allgauss
-allgausspos = np.fliplr(np.sort(allgausspos))[:,:int(gamma*len(allgausspos[0]))]
-allgaussneg = np.fliplr(np.sort(allgaussneg))[:,:int(gamma*len(allgaussneg[0]))]
+print trainlabel
+##########################
+#gradient descent session#
+##########################
 
-#print 'lihat dimensi', len(allgaussneg[0]), len(allgausspos[0])
+mod = generatemodel(kval)
+mod.fit(newinput, trainlabel, batch_size=20, epochs=itergd, verbose=1, shuffle=True)		
 
-#calculate conditional probability
-hujanprob = np.zeros((len(testparam)))
-for i in xrange(len(hujanprob)):
-	hujanprob[i] = np.mean(allgausspos[i]) / (np.mean(allgausspos[i]) + np.mean(allgaussneg[i]))
+##################
+#predict session#
+##################
 
-#print hujanprob
-#np.savetxt('risetCPNN/hasil.csv', hujanprob, delimiter=',')
+#transform test data
+newinputtest = transforminput(testparamnorm, kmean)
 
-######################
-#calculate accuration#
-######################
+lifeprob = mod.predict(newinputtest)
 
-#convert test label from cont value to binary (rain or not)
-for i in xrange(len(testlabel)):
-	if testlabel[i] > 0.0:
-		testlabel[i] = 1.
-	else:
-		testlabel[i] = 0.
+#######################
+#determine performance#
+#######################
 
 #determine biner accuracy
-binpred = np.zeros((len(hujanprob)))
-for i in xrange(len(hujanprob)):
-	if hujanprob[i] > 0.5:
+binpred = np.zeros((len(lifeprob)))
+for i in xrange(len(lifeprob)):
+	if lifeprob[i] > 0.5:
 		binpred[i] = 1.
 
 score = 0
 for i in xrange(len(testlabel)):
-	#print 'coba cek ini', binpred[i], testlabel[i], hujanprob[i], hujan[i]
 	if binpred[i] == testlabel[i]:
 		score += 1
 accbin = float(score) / float(len(testlabel))
@@ -128,37 +129,9 @@ accbin = float(score) / float(len(testlabel))
 #determine brier score
 brierscore = 0
 for i in xrange(len(testlabel)):
-	brierscore += (testlabel[i] - hujanprob[i])**2.0
-	#if testlabel[i] == 1.:
-	#	brierscore += (hujanprob[i])**2.0
-	#else:
-	#	brierscore += (1. - hujanprob[i])**2.0
+	brierscore += (testlabel[i] - lifeprob[i])**2.0
 brierscore = brierscore / float(len(testlabel))
 
-hit = 0.
-fa = 0.
-miss = 0.
-cn = 0.
 for i in xrange(len(testlabel)):
-	if (binpred[i] == 1.0) and (testlabel[i] == 1.0):
-		hit += 1.
-	elif (binpred[i] == 1.0) and (testlabel[i] == 0.0):
-		fa += 1.
-	elif (binpred[i] == 0.0) and (testlabel[i] == 1.0):
-		miss += 1.
-	elif (binpred[i] == 0.0) and (testlabel[i] == 0.0):
-		cn += 1.
-
-CSI = hit / (fa+miss)
-POD = hit / (hit+miss)
-FAR = fa / (fa+hit)
-#print 'hit, false alarm, miss, and correct negative'
-#print hit, fa, miss, cn
-#print 'CSI', CSI
-#print 'POD', POD
-#print 'FAR', FAR
-#print 'akurasi', accbin
-#print 'brier scorenya', brierscore
-#print akurasi	POD	CSI	FAR	brier score
-#print accbin, POD, CSI, FAR, brierscore
-print brierscore
+	print lifeprob[i], testlabel[i]
+print accbin, brierscore[0]
