@@ -1,3 +1,3 @@
 # machine_learning
 
-seri belajar mandiri machine learning
+machine learning self-study
